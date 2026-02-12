@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: dementia-ml-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ml-service:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - dementia-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dementia-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - ML_SERVICE_URL=http://ml-service:8000
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:./data/assessments.db
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - dementia-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dementia-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - dementia-network
+
+networks:
+  dementia-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local
+
+
+
+
