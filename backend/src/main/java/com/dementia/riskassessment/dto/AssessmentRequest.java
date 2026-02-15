@@ -39,6 +39,8 @@ public class AssessmentRequest {
     @Min(value = 0, message = "Sleep hours must be between 0 and 24")
     @Max(value = 24, message = "Sleep hours must be between 0 and 24")
     private Double sleep_hours;
+    
+    private Long userId; // Optional - for linking assessment to user
 
     // Getters and Setters
     public Integer getAge() {
@@ -96,7 +98,16 @@ public class AssessmentRequest {
     public void setSleep_hours(Double sleep_hours) {
         this.sleep_hours = sleep_hours;
     }
+    
+    public Long getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 }
+
 
 
 

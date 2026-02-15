@@ -1,5 +1,6 @@
 package com.dementia.riskassessment.controller;
 
+import com.dementia.riskassessment.dto.AssessmentHistoryDTO;
 import com.dementia.riskassessment.dto.AssessmentRequest;
 import com.dementia.riskassessment.dto.AssessmentResponse;
 import com.dementia.riskassessment.service.AssessmentService;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -34,6 +36,18 @@ public class AssessmentController {
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", "An error occurred while processing the assessment: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    @GetMapping("/assessment/history/{userId}")
+    public ResponseEntity<?> getAssessmentHistory(@PathVariable Long userId) {
+        try {
+            List<AssessmentHistoryDTO> history = assessmentService.getAssessmentHistory(userId);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "An error occurred while fetching assessment history: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

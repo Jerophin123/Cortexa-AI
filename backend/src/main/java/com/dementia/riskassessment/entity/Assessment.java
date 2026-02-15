@@ -46,6 +46,10 @@ public class Assessment {
     
     @Column(nullable = false)
     private String risk_label;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private com.dementia.riskassessment.entity.User user;
 
     // Constructors
     public Assessment() {
@@ -144,6 +148,14 @@ public class Assessment {
 
     public void setRisk_label(String risk_label) {
         this.risk_label = risk_label;
+    }
+    
+    public com.dementia.riskassessment.entity.User getUser() {
+        return user;
+    }
+    
+    public void setUser(com.dementia.riskassessment.entity.User user) {
+        this.user = user;
     }
 }
 

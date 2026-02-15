@@ -75,13 +75,13 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
   if (phase === 'showing') {
     return (
       <div>
-        <h2>Memory Recall Test</h2>
-      <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6' }}>
+        <h2 style={{ color: 'var(--text-primary)' }}>Memory Recall Test</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6' }}>
         Memorize the following 5 words. You have 30 seconds to study them.
       </p>
 
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#667eea' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 'bold', background: 'var(--accent-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             {timeRemaining}s
           </div>
         </div>
@@ -98,13 +98,14 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
               key={index}
               style={{
                 padding: '20px 30px',
-                backgroundColor: '#667eea',
-                color: 'white',
-                borderRadius: '8px',
+                background: 'var(--accent-primary)',
+                color: 'var(--text-inverse)',
+                borderRadius: '12px',
                 fontSize: '1.5rem',
                 fontWeight: 'bold',
                 minWidth: '120px',
-                textAlign: 'center'
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-sm)'
               }}
             >
               {word}
@@ -112,7 +113,7 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', color: '#666' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
           Study these words carefully...
         </div>
       </div>
@@ -127,25 +128,48 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
           Type the words you remember (separated by spaces). You don't need to type them in order.
         </p>
 
-        <label style={{ display: 'block', marginBottom: '20px', color: '#333', fontWeight: '500' }}>
+        <label style={{ display: 'block', marginBottom: '20px', color: 'var(--text-primary)', fontWeight: '500' }}>
           Enter the words you remember:
           <textarea
-            style={{ width: '100%', padding: '12px 16px', marginTop: '8px', border: '2px solid #e0e0e0', borderRadius: '8px', fontSize: '1rem', fontFamily: 'inherit' }}
+            style={{ 
+              width: '100%', 
+              padding: '12px 16px', 
+              marginTop: '8px', 
+              background: 'var(--bg-glass)',
+              backdropFilter: 'var(--blur-glass)',
+              WebkitBackdropFilter: 'var(--blur-glass)',
+              border: '1px solid var(--border-glass)', 
+              borderRadius: '12px', 
+              fontSize: '1rem', 
+              fontFamily: 'inherit',
+              color: 'var(--text-primary)',
+              minHeight: '100px', 
+              resize: 'vertical'
+            }}
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="e.g., apple river mountain book cloud"
             rows={4}
-            style={{ width: '100%', minHeight: '100px', resize: 'vertical' }}
           />
         </label>
 
         <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
           {onBack && (
-            <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: '#f5f5f5', color: '#333' }} onClick={onBack}>
+            <button style={{ padding: '12px 32px', border: '1px solid var(--border-glass)', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'var(--bg-glass)', backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)', color: 'var(--text-primary)' }} onClick={onBack}>
               Back
             </button>
           )}
-          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }} onClick={handleSubmit}>
+          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'var(--accent-primary)', color: 'var(--text-inverse)', boxShadow: 'var(--shadow-glass)', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden' }} onClick={handleSubmit}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%)',
+              pointerEvents: 'none',
+              opacity: 0.6
+            }} />
             Submit
           </button>
         </div>
@@ -156,22 +180,38 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
   // Complete phase
   return (
     <div>
-      <h2>Memory Recall Test</h2>
-      <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6' }}>
+      <h2 style={{ color: 'var(--text-primary)' }}>Memory Recall Test</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6' }}>
         Your memory score has been calculated.
       </p>
 
       <div style={{ 
         textAlign: 'center', 
         padding: '30px', 
-        backgroundColor: '#e8f5e9', 
-        borderRadius: '8px',
-        marginBottom: '20px'
+        background: 'var(--bg-glass)',
+        backdropFilter: 'var(--blur-glass)',
+        WebkitBackdropFilter: 'var(--blur-glass)',
+        border: '1px solid var(--border-glass)', 
+        borderRadius: '24px',
+        marginBottom: '20px',
+        boxShadow: 'var(--shadow-glass)',
+        position: 'relative',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#4caf50', marginBottom: '10px' }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+          pointerEvents: 'none',
+          borderRadius: '24px 24px 0 0'
+        }} />
+        <div style={{ fontSize: '2.5rem', fontWeight: 'bold', background: 'var(--accent-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: '10px' }}>
           {memoryScore}%
         </div>
-        <div style={{ color: '#666' }}>
+        <div style={{ color: 'var(--text-secondary)' }}>
           You remembered {words.filter(word => 
             userInput.toLowerCase().split(/\s+/).includes(word.toLowerCase())
           ).length} out of {words.length} words
@@ -180,11 +220,28 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
 
         <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
           {onBack && (
-            <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: '#f5f5f5', color: '#333' }} onClick={onBack}>
+            <button style={{ padding: '12px 32px', border: '1px solid var(--border-glass)', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'var(--bg-glass)', backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                <path d="M19 12H5"></path>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
               Back
             </button>
           )}
-          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }} onClick={handleContinue}>
+          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'var(--accent-primary)', color: 'var(--text-inverse)', boxShadow: 'var(--shadow-glass)', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={handleContinue}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%)',
+              pointerEvents: 'none',
+              opacity: 0.6
+            }} />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
             Continue
           </button>
         </div>

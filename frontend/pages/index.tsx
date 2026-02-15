@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import styles from '../styles/Home.module.css'
 import Layout from '../components/Layout'
+import Login from '../components/Login'
+import Signup from '../components/Signup'
 import SpeechTest from '../components/SpeechTest'
 import MemoryTest from '../components/MemoryTest'
 import ReactionTest from '../components/ReactionTest'
 import PuzzleTest from '../components/PuzzleTest'
 import LifestyleForm from '../components/LifestyleForm'
+import AssessmentHistory from '../components/AssessmentHistory'
 
 interface AssessmentData {
   age: number
@@ -23,14 +26,82 @@ interface AssessmentResponse {
   recommendation: string
 }
 
+interface UserInfo {
+  userId: number
+  email: string
+  firstName: string
+  lastName: string
+  age: number
+  gender: string
+  bloodGroup: string
+}
+
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const [showAuth, setShowAuth] = useState(true)
+  const [showSignup, setShowSignup] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [currentStep, setCurrentStep] = useState(1) // Start at 1 for first assessment step
   const [assessmentData, setAssessmentData] = useState<Partial<AssessmentData>>({})
   const [result, setResult] = useState<AssessmentResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const totalSteps = 5
+  const totalSteps = 5 // 5 assessment steps
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        setUserInfo(user)
+        setShowAuth(false)
+        // Set age in assessment data from user info
+        setAssessmentData(prev => ({
+          ...prev,
+          age: user.age
+        }))
+      } catch (e) {
+        localStorage.removeItem('user')
+      }
+    }
+  }, [])
+
+  const handleLoginSuccess = (info: UserInfo) => {
+    setUserInfo(info)
+    setShowAuth(false)
+    // Set age in assessment data from user info
+    setAssessmentData(prev => ({
+      ...prev,
+      age: info.age
+    }))
+    setCurrentStep(1) // Move to first assessment step
+    setError(null)
+  }
+
+  const handleSignupSuccess = (info: UserInfo) => {
+    setUserInfo(info)
+    setShowAuth(false)
+    // Set age in assessment data from user info
+    setAssessmentData(prev => ({
+      ...prev,
+      age: info.age
+    }))
+    setCurrentStep(1) // Move to first assessment step
+    setError(null)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    setUserInfo(null)
+    setShowAuth(true)
+    setShowSignup(false)
+    setCurrentStep(1)
+    setAssessmentData({})
+    setResult(null)
+    setError(null)
+  }
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -40,7 +111,7 @@ export default function Home() {
   }
 
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(prev => prev - 1)
       setError(null)
     }
@@ -79,10 +150,10 @@ export default function Home() {
     handleNext()
   }
 
-  const handleLifestyleComplete = (age: number, sleepHours: number) => {
+  const handleLifestyleComplete = (sleepHours: number) => {
+    // Age is already set from account info, just add sleep hours
     const updatedData = {
       ...assessmentData,
-      age: age,
       sleep_hours: sleepHours
     }
     setAssessmentData(updatedData)
@@ -127,6 +198,7 @@ export default function Home() {
           word_repetition_rate: data.word_repetition_rate,
           task_error_rate: data.task_error_rate,
           sleep_hours: data.sleep_hours,
+          userId: userInfo?.userId || null // Include user ID if logged in
         }
       )
       setResult(response.data)
@@ -153,9 +225,21 @@ export default function Home() {
 
   const handleReset = () => {
     setCurrentStep(1)
-    setAssessmentData({})
+    setAssessmentData({
+      age: userInfo?.age // Keep age from user info
+    })
     setResult(null)
     setError(null)
+    setShowHistory(false)
+  }
+
+  const handleViewHistory = () => {
+    setShowHistory(true)
+    setResult(null)
+  }
+
+  const handleBackFromHistory = () => {
+    setShowHistory(false)
   }
 
   const getRiskColor = (riskLevel: string) => {
@@ -171,9 +255,30 @@ export default function Home() {
     }
   }
 
+  // Show assessment history if requested
+  if (showHistory && userInfo) {
+    return (
+      <Layout 
+        showSidebar={!!userInfo}
+        userInfo={userInfo}
+        onLogout={handleLogout}
+      >
+        <AssessmentHistory 
+          userId={userInfo.userId}
+          onBack={handleBackFromHistory}
+        />
+      </Layout>
+    )
+  }
+
   if (result) {
     return (
-      <Layout>
+      <Layout 
+        showSidebar={!!userInfo}
+        userInfo={userInfo}
+        onLogout={handleLogout}
+        onViewHistory={handleViewHistory}
+      >
         <div className={styles.resultCard}>
           <div className={styles.resultHeader}>
             <h1 className={styles.title}>Assessment Complete</h1>
@@ -203,6 +308,24 @@ export default function Home() {
               <button className={styles.button} onClick={handleReset}>
                 Start New Assessment
               </button>
+              {userInfo && (
+                <>
+                  <button 
+                    className={styles.button} 
+                    onClick={handleViewHistory}
+                    style={{ marginLeft: '10px', background: '#667eea' }}
+                  >
+                    View History
+                  </button>
+                  <button 
+                    className={styles.button} 
+                    onClick={handleLogout}
+                    style={{ marginLeft: '10px', background: '#f44336' }}
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -210,13 +333,66 @@ export default function Home() {
     )
   }
 
+  // Show login/signup if not authenticated
+  if (showAuth) {
+    return (
+      <div style={{
+        height: '100vh',
+        width: '100vw',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        overflow: 'hidden',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: showSignup ? '600px' : '450px',
+          maxHeight: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {showSignup ? (
+            <Signup 
+              onSuccess={handleSignupSuccess}
+              onSwitchToLogin={() => setShowSignup(false)}
+            />
+          ) : (
+            <Login 
+              onSuccess={handleLoginSuccess}
+              onSwitchToSignup={() => setShowSignup(true)}
+            />
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-      <Layout currentStep={currentStep} totalSteps={totalSteps}>
+      <Layout 
+        currentStep={currentStep} 
+        totalSteps={totalSteps} 
+        showSidebar={!!userInfo}
+        userInfo={userInfo}
+        onLogout={handleLogout}
+        onViewHistory={handleViewHistory}
+      >
       <div className={styles.assessmentCard}>
         <div className={styles.cardHeader}>
           <div>
-            <h1 className={styles.title}>Cognitive Risk Assessment</h1>
+            <h1 className={styles.title}>Cortexa AI - Cognitive Risk Assessment</h1>
             <p className={styles.subtitle}>Step {currentStep} of {totalSteps}</p>
+            {userInfo && (
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '6px', fontWeight: '500' }}>
+                Welcome, {userInfo.firstName} {userInfo.lastName}
+              </p>
+            )}
           </div>
           <div className={styles.stepBadge}>
             <span>Step {currentStep}</span>
@@ -236,7 +412,7 @@ export default function Home() {
           {currentStep === 1 && (
             <SpeechTest 
               onComplete={handleSpeechComplete}
-              onBack={currentStep > 1 ? handleBack : undefined}
+              onBack={handleBack}
             />
           )}
 
@@ -263,6 +439,7 @@ export default function Home() {
 
           {currentStep === 5 && (
             <LifestyleForm 
+              age={userInfo?.age || 0}
               onComplete={handleLifestyleComplete}
               onBack={handleBack}
             />

@@ -105,22 +105,32 @@ export default function ReactionTest({ onComplete, onBack }: ReactionTestProps) 
   }
 
   return (
-    <div>
-      <h2>Reaction Time Test</h2>
-      <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6' }}>
-        Click the box as soon as it turns green. You will complete {TOTAL_ROUNDS} rounds.
-      </p>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
+      <div style={{ flexShrink: 0 }}>
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Reaction Time Test</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5', fontSize: '0.95rem' }}>
+          Click the box as soon as it turns green. You will complete {TOTAL_ROUNDS} rounds.
+        </p>
+      </div>
 
-      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <div style={{ fontSize: '1.2rem', marginBottom: '20px', color: '#666' }}>
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        minHeight: 0,
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
           Round {round + 1} of {TOTAL_ROUNDS}
         </div>
         
         {reactionTimes.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <strong>Previous times:</strong>{' '}
+          <div style={{ marginBottom: '8px', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+            <strong>Previous:</strong>{' '}
             {reactionTimes.map((time, idx) => (
-              <span key={idx} style={{ margin: '0 5px' }}>
+              <span key={idx} style={{ margin: '0 4px', color: 'var(--text-secondary)' }}>
                 {time}ms
               </span>
             ))}
@@ -130,46 +140,66 @@ export default function ReactionTest({ onComplete, onBack }: ReactionTestProps) 
         <div
           onClick={handleClick}
           style={{
-            width: '300px',
-            height: '300px',
-            backgroundColor: getBoxColor(),
-            borderRadius: '8px',
-            margin: '0 auto',
+            width: '240px',
+            height: '240px',
+            background: phase === 'waiting' ? 'var(--bg-glass)' : getBoxColor(),
+            backdropFilter: phase === 'waiting' ? 'var(--blur-glass)' : 'none',
+            WebkitBackdropFilter: phase === 'waiting' ? 'var(--blur-glass)' : 'none',
+            border: phase === 'waiting' ? '1px solid var(--border-glass)' : 'none',
+            borderRadius: '20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '2rem',
+            fontSize: '1.5rem',
             fontWeight: 'bold',
-            color: phase === 'waiting' ? '#999' : 'white',
+            color: phase === 'waiting' ? 'var(--text-secondary)' : 'white',
             cursor: phase === 'ready' ? 'pointer' : 'default',
-            transition: 'background-color 0.2s',
-            userSelect: 'none'
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            userSelect: 'none',
+            boxShadow: phase === 'ready' ? 'var(--shadow-glass-hover)' : (phase === 'waiting' ? 'var(--shadow-glass)' : 'var(--shadow-md)'),
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
+          {phase === 'waiting' && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+              pointerEvents: 'none',
+              borderRadius: '20px 20px 0 0'
+            }} />
+          )}
           {getBoxText()}
         </div>
 
         {phase === 'ready' && (
-          <div style={{ marginTop: '20px', fontSize: '1.5rem', color: '#4caf50' }}>
+          <div style={{ marginTop: '8px', fontSize: '1.25rem', background: 'var(--accent-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             {currentReactionTime}ms
+          </div>
+        )}
+
+        {phase === 'clicked' && (
+          <div style={{ 
+            marginTop: '8px',
+            color: 'var(--text-secondary)',
+            fontSize: '0.85rem'
+          }}>
+            {reactionTimes.length < TOTAL_ROUNDS ? 'Moving to next round...' : 'Calculating results...'}
           </div>
         )}
       </div>
 
-      {phase === 'clicked' && (
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '20px',
-          color: '#666',
-          fontSize: '0.9rem'
-        }}>
-          {reactionTimes.length < TOTAL_ROUNDS ? 'Moving to next round...' : 'Calculating results...'}
-        </div>
-      )}
-
       {onBack && phase === 'waiting' && round === 0 && (
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
-          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: '#f5f5f5', color: '#333' }} onClick={onBack}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px', flexShrink: 0 }}>
+          <button style={{ padding: '10px 24px', border: '1px solid var(--border-glass)', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', background: 'var(--bg-glass)', backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
             Back
           </button>
         </div>

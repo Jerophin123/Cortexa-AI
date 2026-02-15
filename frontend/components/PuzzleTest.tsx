@@ -36,6 +36,8 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
     setShuffledSequence(shuffled)
     setSelectedOrder([])
     setAttempts(0)
+    // Ensure totalAttempts is at least the number of rounds completed
+    setTotalAttempts(prev => Math.max(prev, round + 1))
   }
 
   const handleNumberClick = (num: number) => {
@@ -72,8 +74,16 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
           startNewRound()
         }, 1000)
       } else {
-        // All rounds complete
-        setIsComplete(true)
+        // All rounds complete - ensure totalAttempts is updated before setting complete
+        setTotalAttempts(prev => {
+          // Ensure we have at least one attempt per round completed
+          const minAttempts = round + 1
+          return Math.max(prev, minAttempts)
+        })
+        // Use setTimeout to ensure state is updated before setting complete
+        setTimeout(() => {
+          setIsComplete(true)
+        }, 100)
       }
     }
   }
@@ -83,79 +93,142 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
   }
 
   const handleContinue = () => {
-    // Calculate error rate: errors / total attempts
-    const finalTotalAttempts = totalAttempts > 0 ? totalAttempts : TOTAL_ROUNDS // Fallback if no attempts recorded
-    const errorRate = finalTotalAttempts > 0 ? errors / finalTotalAttempts : 0
-    onComplete(Math.min(errorRate, 1)) // Cap at 1
+    try {
+      // Calculate error rate: errors / total attempts
+      // Use the state variable totalAttempts, ensuring it's at least the number of rounds completed
+      const finalTotalAttempts = totalAttempts > 0 ? totalAttempts : TOTAL_ROUNDS
+      const errorRate = finalTotalAttempts > 0 ? errors / finalTotalAttempts : 0
+      const cappedErrorRate = Math.min(errorRate, 1) // Cap at 1
+      
+      console.log('PuzzleTest handleContinue:', { 
+        errors, 
+        totalAttempts, 
+        finalTotalAttempts, 
+        errorRate, 
+        cappedErrorRate,
+        round,
+        TOTAL_ROUNDS
+      })
+      
+      if (onComplete) {
+        onComplete(cappedErrorRate)
+      } else {
+        console.error('PuzzleTest: onComplete callback is not defined')
+      }
+    } catch (error) {
+      console.error('PuzzleTest handleContinue error:', error)
+      // Fallback: call onComplete with 0 error rate if calculation fails
+      if (onComplete) {
+        onComplete(0)
+      }
+    }
   }
 
   if (isComplete) {
-    const totalAttempts = attempts + (round + 1)
-    const errorRate = totalAttempts > 0 ? errors / totalAttempts : 0
+    // Use state variable, not a local one
+    const calculatedTotalAttempts = totalAttempts > 0 ? totalAttempts : (round + 1)
+    const errorRate = calculatedTotalAttempts > 0 ? errors / calculatedTotalAttempts : 0
 
     return (
-      <div>
-        <h2>Task Performance Test</h2>
-      <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6' }}>
-        Puzzle test complete!
-      </p>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
+        <div style={{ flexShrink: 0 }}>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Task Performance Test</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5', fontSize: '0.95rem' }}>
+            Puzzle test complete!
+          </p>
+        </div>
 
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '30px', 
-        backgroundColor: '#e8f5e9', 
-        borderRadius: '8px',
-        marginBottom: '20px'
-      }}>
-        <div style={{ fontSize: '1.5rem', marginBottom: '10px' }}>
-          <strong>Results:</strong>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '24px', 
+            background: 'var(--bg-glass)',
+            backdropFilter: 'var(--blur-glass)',
+            WebkitBackdropFilter: 'var(--blur-glass)',
+            border: '1px solid var(--border-glass)', 
+            borderRadius: '20px',
+            boxShadow: 'var(--shadow-glass)',
+            width: '100%',
+            maxWidth: '400px'
+          }}>
+            <div style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: '600' }}>
+              Results:
+            </div>
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '6px', fontSize: '0.9rem' }}>
+              Total Errors: {errors}
+            </div>
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.9rem' }}>
+              Total Attempts: {calculatedTotalAttempts}
+            </div>
+            <div style={{ fontSize: '1.1rem', marginTop: '12px', background: 'var(--accent-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: '600' }}>
+              Error Rate: {(errorRate * 100).toFixed(1)}%
+            </div>
+          </div>
         </div>
-        <div style={{ color: '#666', marginBottom: '5px' }}>
-          Total Errors: {errors}
-        </div>
-        <div style={{ color: '#666', marginBottom: '5px' }}>
-          Total Attempts: {totalAttempts || TOTAL_ROUNDS}
-        </div>
-        <div style={{ fontSize: '1.2rem', marginTop: '15px', color: '#4caf50' }}>
-          Error Rate: {((errors / (totalAttempts || TOTAL_ROUNDS)) * 100).toFixed(1)}%
-        </div>
-      </div>
 
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
-        {onBack && (
-          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: '#f5f5f5', color: '#333' }} onClick={onBack}>
-            Back
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px', flexShrink: 0 }}>
+          {onBack && (
+            <button style={{ padding: '10px 24px', border: '1px solid var(--border-glass)', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', background: 'var(--bg-glass)', backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)', color: 'var(--text-primary)' }} onClick={onBack}>
+              Back
+            </button>
+          )}
+          <button style={{ padding: '10px 24px', border: 'none', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', background: 'var(--accent-primary)', color: 'var(--text-inverse)', boxShadow: 'var(--shadow-glass)', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden' }} onClick={handleContinue}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%)',
+              pointerEvents: 'none',
+              opacity: 0.6
+            }} />
+            Continue
           </button>
-        )}
-        <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }} onClick={handleContinue}>
-          Continue
-        </button>
-      </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div>
-      <h2>Task Performance Test</h2>
-      <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6' }}>
-        Arrange the numbers in the correct order. Round {round + 1} of {TOTAL_ROUNDS}
-      </p>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
+      <div style={{ flexShrink: 0 }}>
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Task Performance Test</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: '1.5', fontSize: '0.95rem' }}>
+          Arrange the numbers in the correct order. Round {round + 1} of {TOTAL_ROUNDS}
+        </p>
+      </div>
 
-      <div style={{ marginBottom: '30px' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'hidden' }}>
         <div style={{ 
           textAlign: 'center', 
-          padding: '20px', 
-          backgroundColor: '#f5f5f5', 
-          borderRadius: '8px',
-          marginBottom: '20px'
+          padding: '12px', 
+          background: 'var(--bg-glass)',
+          backdropFilter: 'var(--blur-glass)',
+          WebkitBackdropFilter: 'var(--blur-glass)',
+          border: '1px solid var(--border-glass)', 
+          borderRadius: '16px',
+          flexShrink: 0,
+          boxShadow: 'var(--shadow-glass)',
+          position: 'relative',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#666' }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+            pointerEvents: 'none',
+            borderRadius: '16px 16px 0 0'
+          }} />
+          <div style={{ fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)', fontWeight: '500' }}>
             Target Sequence:
           </div>
           <div style={{ 
             display: 'flex', 
-            gap: '10px', 
+            gap: '8px', 
             justifyContent: 'center',
             flexWrap: 'wrap'
           }}>
@@ -163,16 +236,17 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
               <div
                 key={idx}
                 style={{
-                  width: '50px',
-                  height: '50px',
-                  backgroundColor: '#667eea',
-                  color: 'white',
-                  borderRadius: '8px',
+                  width: '40px',
+                  height: '40px',
+                  background: 'var(--accent-primary)',
+                  color: 'var(--text-inverse)',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold'
+                  fontSize: '1.2rem',
+                  fontWeight: 'bold',
+                  boxShadow: 'var(--shadow-sm)'
                 }}
               >
                 {num}
@@ -181,13 +255,13 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: '10px', textAlign: 'center' }}>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ fontSize: '0.9rem', marginBottom: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: '500' }}>
             Click numbers in order:
           </div>
           <div style={{ 
             display: 'flex', 
-            gap: '10px', 
+            gap: '8px', 
             justifyContent: 'center',
             flexWrap: 'wrap'
           }}>
@@ -199,25 +273,28 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
                   key={idx}
                   onClick={() => handleNumberClick(num)}
                   style={{
-                    width: '60px',
-                    height: '60px',
-                    backgroundColor: isSelected ? '#4caf50' : '#e0e0e0',
-                    color: isSelected ? 'white' : '#333',
-                    borderRadius: '8px',
+                    width: '48px',
+                    height: '48px',
+                    background: isSelected ? 'var(--accent-primary)' : 'var(--bg-glass)',
+                    backdropFilter: isSelected ? 'none' : 'var(--blur-glass)',
+                    WebkitBackdropFilter: isSelected ? 'none' : 'var(--blur-glass)',
+                    color: isSelected ? 'var(--text-inverse)' : 'var(--text-primary)',
+                    borderRadius: '10px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.5rem',
+                    fontSize: '1.2rem',
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    border: isSelected ? '3px solid #2e7d32' : '3px solid transparent'
+                    border: isSelected ? '2px solid rgba(102, 126, 234, 0.5)' : '2px solid var(--border-glass)',
+                    boxShadow: isSelected ? 'var(--shadow-sm)' : 'none'
                   }}
                 >
                   <div>{num}</div>
                   {isSelected && (
-                    <div style={{ fontSize: '0.8rem', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.65rem', marginTop: '1px', lineHeight: '1' }}>
                       #{selectedIndex + 1}
                     </div>
                   )}
@@ -230,63 +307,87 @@ export default function PuzzleTest({ onComplete, onBack }: PuzzleTestProps) {
         {selectedOrder.length > 0 && (
           <div style={{ 
             textAlign: 'center', 
-            marginBottom: '20px',
-            padding: '15px',
-            backgroundColor: '#e3f2fd',
-            borderRadius: '8px'
+            padding: '10px',
+            background: 'var(--bg-glass)',
+            backdropFilter: 'var(--blur-glass)',
+            WebkitBackdropFilter: 'var(--blur-glass)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: '12px',
+            flexShrink: 0
           }}>
-            <strong>Your order:</strong>{' '}
-            {selectedOrder.join(' → ')}
+            <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem' }}>Your order:</strong>{' '}
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{selectedOrder.join(' → ')}</span>
           </div>
         )}
 
         <div style={{ 
           textAlign: 'center', 
-          marginBottom: '20px',
-          color: '#666'
+          color: 'var(--text-secondary)',
+          fontSize: '0.8rem',
+          flexShrink: 0
         }}>
-          Attempts this round: {attempts} | Total errors: {errors} | Total attempts: {totalAttempts}
+          Attempts: {attempts} | Errors: {errors} | Total: {totalAttempts}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', flexShrink: 0 }}>
         {onBack && (
-          <button style={{ padding: '12px 32px', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', background: '#f5f5f5', color: '#333' }} onClick={onBack}>
+          <button style={{ padding: '10px 24px', border: '1px solid var(--border-glass)', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', background: 'var(--bg-glass)', backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
             Back
           </button>
         )}
         <button 
           style={{ 
-            padding: '12px 32px', 
-            border: 'none', 
-            borderRadius: '8px', 
-            fontSize: '1rem', 
+            padding: '10px 24px', 
+            border: '1px solid var(--border-glass)', 
+            borderRadius: '12px', 
+            fontSize: '0.9rem', 
             fontWeight: '600', 
             cursor: selectedOrder.length === 0 ? 'not-allowed' : 'pointer',
-            background: '#f5f5f5',
-            color: '#333',
-            opacity: selectedOrder.length === 0 ? 0.6 : 1
+            background: 'var(--bg-glass)',
+            backdropFilter: 'var(--blur-glass)',
+            WebkitBackdropFilter: 'var(--blur-glass)',
+            color: 'var(--text-primary)',
+            opacity: selectedOrder.length === 0 ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }} 
           onClick={handleReset}
           disabled={selectedOrder.length === 0}
         >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
           Reset
         </button>
         <button 
           style={{ 
-            padding: '12px 32px', 
+            padding: '10px 24px', 
             border: 'none', 
-            borderRadius: '8px', 
-            fontSize: '1rem', 
+            borderRadius: '12px', 
+            fontSize: '0.9rem', 
             fontWeight: '600', 
             cursor: selectedOrder.length !== currentSequence.length ? 'not-allowed' : 'pointer',
-            background: selectedOrder.length !== currentSequence.length ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            opacity: selectedOrder.length !== currentSequence.length ? 0.6 : 1
+            background: selectedOrder.length !== currentSequence.length ? '#ccc' : 'var(--accent-primary)',
+            color: 'var(--text-inverse)',
+            opacity: selectedOrder.length !== currentSequence.length ? 0.6 : 1,
+            boxShadow: selectedOrder.length === currentSequence.length ? 'var(--shadow-sm)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }} 
           onClick={handleCheck}
           disabled={selectedOrder.length !== currentSequence.length}
         >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
           Check Answer
         </button>
       </div>
