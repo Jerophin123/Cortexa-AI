@@ -44,6 +44,15 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime createdAt;
     
+    @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 0")
+    private Boolean emailVerified = false;
+    
+    @Column
+    private String verificationCode;
+    
+    @Column
+    private LocalDateTime verificationCodeExpiry;
+    
     // Constructors
     public User() {
     }
@@ -132,5 +141,30 @@ public class User {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+    
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+    
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+    
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+    
+    public LocalDateTime getVerificationCodeExpiry() {
+        return verificationCodeExpiry;
+    }
+    
+    public void setVerificationCodeExpiry(LocalDateTime verificationCodeExpiry) {
+        this.verificationCodeExpiry = verificationCodeExpiry;
+    }
 }
+
 

@@ -13,15 +13,21 @@ import org.springframework.transaction.annotation.Isolation;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
     
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private static final int VERIFICATION_CODE_LENGTH = 6;
+    private static final int VERIFICATION_CODE_EXPIRY_HOURS = 24;
     
     @Autowired
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
     
     public AuthResponse signup(SignupRequest request) {
@@ -95,10 +101,24 @@ public class AuthService {
             request.getBloodGroup()
         );
         
+        // Generate verification code
+        String verificationCode = generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationCodeExpiry(LocalDateTime.now().plusHours(VERIFICATION_CODE_EXPIRY_HOURS));
+        user.setEmailVerified(false);
+        
         user = userRepository.save(user);
         
         // Flush to ensure the save is committed immediately
         userRepository.flush();
+        
+        // Send verification email
+        try {
+            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), verificationCode);
+        } catch (Exception e) {
+            // Log error but don't fail signup
+            System.err.println("Failed to send verification email: " + e.getMessage());
+        }
         
         return new AuthResponse(
             user.getId(),
@@ -152,6 +172,72 @@ public class AuthService {
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error hashing password", e);
+        }
+    }
+    
+    private String generateVerificationCode() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < VERIFICATION_CODE_LENGTH; i++) {
+            code.append(random.nextInt(10));
+        }
+        return code.toString();
+    }
+    
+    public AuthResponse verifyEmail(String email, String verificationCode) {
+        User user = userRepository.findByEmail(email)
+            .orElse(null);
+        
+        if (user == null) {
+            return new AuthResponse(false, "User not found");
+        }
+        
+        if (user.getEmailVerified()) {
+            return new AuthResponse(false, "Email already verified");
+        }
+        
+        if (user.getVerificationCode() == null || !user.getVerificationCode().equals(verificationCode)) {
+            return new AuthResponse(false, "Invalid verification code");
+        }
+        
+        if (user.getVerificationCodeExpiry() == null || user.getVerificationCodeExpiry().isBefore(LocalDateTime.now())) {
+            return new AuthResponse(false, "Verification code has expired. Please request a new one.");
+        }
+        
+        user.setEmailVerified(true);
+        user.setVerificationCode(null);
+        user.setVerificationCodeExpiry(null);
+        userRepository.save(user);
+        userRepository.flush();
+        
+        return new AuthResponse(true, "Email verified successfully");
+    }
+    
+    public AuthResponse resendVerificationCode(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElse(null);
+        
+        if (user == null) {
+            return new AuthResponse(false, "User not found");
+        }
+        
+        if (user.getEmailVerified()) {
+            return new AuthResponse(false, "Email already verified");
+        }
+        
+        // Generate new verification code
+        String verificationCode = generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationCodeExpiry(LocalDateTime.now().plusHours(VERIFICATION_CODE_EXPIRY_HOURS));
+        userRepository.save(user);
+        userRepository.flush();
+        
+        // Send verification email
+        try {
+            emailService.sendResendVerificationEmail(user.getEmail(), user.getFirstName(), verificationCode);
+            return new AuthResponse(true, "Verification code sent to your email");
+        } catch (Exception e) {
+            return new AuthResponse(false, "Failed to send verification email: " + e.getMessage());
         }
     }
 }

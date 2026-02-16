@@ -2,7 +2,9 @@ package com.dementia.riskassessment.controller;
 
 import com.dementia.riskassessment.dto.AuthResponse;
 import com.dementia.riskassessment.dto.LoginRequest;
+import com.dementia.riskassessment.dto.ResendVerificationRequest;
 import com.dementia.riskassessment.dto.SignupRequest;
+import com.dementia.riskassessment.dto.VerifyEmailRequest;
 import com.dementia.riskassessment.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +63,40 @@ public class AuthController {
         }
     }
     
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        try {
+            AuthResponse response = authService.verifyEmail(request.getEmail(), request.getVerificationCode());
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "An error occurred during email verification: " + e.getMessage());
+            errorResponse.put("success", "false");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        try {
+            AuthResponse response = authService.resendVerificationCode(request.getEmail());
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "An error occurred while resending verification code: " + e.getMessage());
+            errorResponse.put("success", "false");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -72,4 +108,5 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 }
+
 

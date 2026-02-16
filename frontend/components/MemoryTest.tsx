@@ -123,8 +123,8 @@ export default function MemoryTest({ onComplete, onBack }: MemoryTestProps) {
   if (phase === 'recall') {
     return (
       <div>
-        <h2>Memory Recall Test</h2>
-        <p className="stepDescription">
+        <h2 style={{ color: 'var(--text-primary)' }}>Memory Recall Test</h2>
+        <p className="stepDescription" style={{ color: 'var(--text-secondary)', marginBottom: '25px', lineHeight: '1.6' }}>
           Type the words you remember (separated by spaces). You don't need to type them in order.
         </p>
 

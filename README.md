@@ -187,6 +187,32 @@ The ML service expects:
 - `scaler.pkl` - Feature scaler (created automatically if missing)
 - `label_encoder.pkl` - Label encoder (created automatically if missing)
 
+### Email Configuration (Required for Email Verification)
+
+The application uses Gmail SMTP to send verification emails and assessment results. 
+
+**Setup Steps:**
+
+1. Create a `.env` file in the project root:
+   ```env
+   EMAIL_USERNAME=your-email@gmail.com
+   EMAIL_PASSWORD=your-16-character-app-password
+   ```
+
+2. Get a Gmail App Password:
+   - Enable 2-Step Verification on your Google Account
+   - Go to [App Passwords](https://myaccount.google.com/apppasswords)
+   - Generate a new app password for "Mail"
+   - Use the 16-character password (NOT your regular Gmail password)
+
+3. For Docker: The `.env` file is automatically loaded by docker-compose
+
+4. For Local Development: 
+   - **Windows PowerShell**: Run `.\load-env.ps1` before starting the backend
+   - **Linux/Mac**: Export variables or use `export $(cat .env | xargs)`
+
+See `EMAIL_SETUP.md` for detailed instructions and troubleshooting.
+
 ## Important Notes
 
 ⚠️ **Medical Disclaimer**: This is a cognitive risk screening tool and not a medical diagnosis. The system is designed for risk stratification purposes only and should not be used as a substitute for professional medical advice.
@@ -253,6 +279,8 @@ For issues or questions, please check the logs:
 ```bash
 docker-compose logs -f
 ```
+
+
 
 
 

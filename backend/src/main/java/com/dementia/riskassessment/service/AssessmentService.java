@@ -25,12 +25,15 @@ public class AssessmentService {
     private final MLServiceClient mlServiceClient;
     private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
     
     @Autowired
-    public AssessmentService(MLServiceClient mlServiceClient, AssessmentRepository assessmentRepository, UserRepository userRepository) {
+    public AssessmentService(MLServiceClient mlServiceClient, AssessmentRepository assessmentRepository, 
+                           UserRepository userRepository, EmailService emailService) {
         this.mlServiceClient = mlServiceClient;
         this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
     
     public AssessmentResponse processAssessment(AssessmentRequest request) {
@@ -131,6 +134,32 @@ public class AssessmentService {
         
         // Flush to ensure the save is committed immediately
         assessmentRepository.flush();
+        
+        // Send assessment results via email if user is logged in and email is verified
+        if (request.getUserId() != null) {
+            User user = userRepository.findById(request.getUserId()).orElse(null);
+            if (user != null && user.getEmailVerified() != null && user.getEmailVerified()) {
+                try {
+                    emailService.sendAssessmentResultsEmail(
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        riskLevel,
+                        recommendation,
+                        request.getAge(),
+                        request.getReaction_time_ms(),
+                        request.getMemory_score(),
+                        request.getSpeech_pause_ms(),
+                        request.getWord_repetition_rate(),
+                        request.getTask_error_rate(),
+                        request.getSleep_hours()
+                    );
+                } catch (Exception e) {
+                    // Log error but don't fail assessment
+                    System.err.println("Failed to send assessment results email: " + e.getMessage());
+                }
+            }
+        }
         
         return new AssessmentResponse(riskLevel, recommendation);
     }

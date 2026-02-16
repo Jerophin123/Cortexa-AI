@@ -2,10 +2,12 @@ package com.dementia.riskassessment;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
 import jakarta.annotation.PostConstruct;
 import java.io.File;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {MailSenderAutoConfiguration.class})
 public class DementiaRiskAssessmentApplication {
 
     public static void main(String[] args) {

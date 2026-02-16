@@ -30,6 +30,12 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
   const [bloodGroup, setBloodGroup] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showVerification, setShowVerification] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupUserInfo, setSignupUserInfo] = useState<UserInfo | null>(null)
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
   const genders = ['Male', 'Female', 'Other', 'Prefer not to say']
@@ -83,8 +89,8 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
       })
 
       if (response.data.success) {
-        // Store user info in localStorage
-        localStorage.setItem('user', JSON.stringify({
+        // Store user info for after verification
+        const userInfo = {
           userId: response.data.userId,
           email: response.data.email,
           firstName: response.data.firstName,
@@ -92,17 +98,11 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
           age: response.data.age,
           gender: response.data.gender,
           bloodGroup: response.data.bloodGroup
-        }))
-        
-        onSuccess({
-          userId: response.data.userId,
-          email: response.data.email,
-          firstName: response.data.firstName,
-          lastName: response.data.lastName,
-          age: response.data.age,
-          gender: response.data.gender,
-          bloodGroup: response.data.bloodGroup
-        })
+        }
+        setSignupEmail(response.data.email)
+        setSignupUserInfo(userInfo)
+        setShowVerification(true)
+        setError(null)
       } else {
         setError(response.data.message || 'Signup failed')
       }
@@ -122,6 +122,176 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (verificationCode.length !== 6) {
+      setError('Verification code must be 6 digits')
+      return
+    }
+
+    setVerifying(true)
+
+    try {
+      const response = await axios.post('http://localhost:8080/api/auth/verify-email', {
+        email: signupEmail,
+        verificationCode: verificationCode
+      })
+
+      if (response.data.success && signupUserInfo) {
+        // Store user info in localStorage
+        localStorage.setItem('user', JSON.stringify(signupUserInfo))
+        
+        onSuccess(signupUserInfo)
+      } else {
+        setError(response.data.message || 'Verification failed')
+      }
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message)
+      } else {
+        setError('An error occurred. Please try again.')
+      }
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  const handleResendCode = async () => {
+    setError(null)
+    setResending(true)
+
+    try {
+      const response = await axios.post('http://localhost:8080/api/auth/resend-verification', {
+        email: signupEmail
+      })
+
+      if (response.data.success) {
+        setError(null)
+        alert('Verification code sent to your email!')
+      } else {
+        setError(response.data.message || 'Failed to resend verification code')
+      }
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message)
+      } else {
+        setError('An error occurred. Please try again.')
+      }
+    } finally {
+      setResending(false)
+    }
+  }
+
+  // Show verification form if signup was successful
+  if (showVerification) {
+    return (
+      <div className={styles.assessmentCard}>
+        <div className={styles.cardHeader}>
+          <div>
+            <h1 className={styles.title}>Verify Your Email</h1>
+            <p className={styles.subtitle}>We sent a verification code to {signupEmail}</p>
+          </div>
+        </div>
+
+        <div className={styles.stepContent} style={{ overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {error && (
+            <div style={{ 
+              background: 'var(--bg-glass)',
+              backdropFilter: 'var(--blur-glass)',
+              WebkitBackdropFilter: 'var(--blur-glass)',
+              color: '#ef4444', 
+              padding: '8px 12px', 
+              borderRadius: '12px', 
+              marginBottom: '10px', 
+              border: '1px solid var(--border-glass)',
+              fontSize: '0.8rem',
+              flexShrink: 0,
+              boxShadow: 'var(--shadow-glass)'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyEmail} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px', color: 'var(--text-primary)', fontWeight: '500', fontSize: '0.9rem' }}>
+              Verification Code
+              <input
+                type="text"
+                required
+                maxLength={6}
+                className={styles.input}
+                style={{ 
+                  marginTop: '8px', 
+                  fontSize: '1.5rem', 
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  fontFamily: 'monospace',
+                  fontWeight: '600'
+                }}
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  setVerificationCode(value)
+                  setError(null)
+                }}
+                placeholder="000000"
+                autoFocus
+              />
+              <p style={{ 
+                marginTop: '8px', 
+                fontSize: '0.75rem', 
+                color: 'var(--text-secondary)',
+                textAlign: 'center'
+              }}>
+                Enter the 6-digit code sent to your email
+              </p>
+            </label>
+
+            <button 
+              type="submit"
+              disabled={verifying || verificationCode.length !== 6}
+              className={styles.button}
+              style={{ 
+                width: '100%',
+                marginBottom: '10px',
+                marginTop: 'auto',
+                flexShrink: 0,
+                opacity: (verifying || verificationCode.length !== 6) ? 0.6 : 1,
+                background: (verifying || verificationCode.length !== 6) ? '#ccc' : undefined
+              }} 
+            >
+              {verifying ? 'Verifying...' : 'Verify Email'}
+            </button>
+
+            <div style={{ textAlign: 'center', paddingTop: '8px', flexShrink: 0 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0 0 6px 0' }}>
+                Didn't receive the code?
+              </p>
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resending}
+                className={styles.buttonSecondary}
+                style={{
+                  width: 'auto',
+                  margin: '0 auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: resending ? 0.6 : 1
+                }}
+              >
+                {resending ? 'Sending...' : 'Resend Code'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
   }
 
   return (
