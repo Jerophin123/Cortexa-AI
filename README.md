@@ -1,4 +1,4 @@
-# AI-Powered Cognitive Risk Assessment System
+# Cortexa AI: An AI Powered Cognitive Risk Assessment System
 
 A production-ready, full-stack AI-based Early-Stage Dementia Risk Stratification application built with a modern microservices architecture. This system provides comprehensive cognitive assessment capabilities with machine learning-powered risk prediction, user authentication, and assessment history tracking.
 
